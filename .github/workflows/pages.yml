@@ -66,6 +66,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Prepare artifact (site root only)
         run: |
