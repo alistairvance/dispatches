@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SpaceFix — Remove Extra Gaps, Keep One Space</title>
+<meta name="description" content="Paste messy text, get clean text. SpaceFix removes long gaps, double spaces, tabs & stray line breaks — keeping exactly one space between words." />
+<meta name="theme-color" content="#070b16" />
+<style>
+  :root{
+    --bg:#070b16; --bg2:#0b1224;
+    --card:rgba(255,255,255,.06); --card-border:rgba(255,255,255,.12);
+    --text:#eef2ff; --muted:#9aa6c7; --muted2:#6b7799;
+    --accent:#7c6cff; --accent2:#00e5cc; --accent3:#ff5ca8;
+    --good:#22e58c; --warn:#ffb020;
+    --radius:20px; --radius-sm:14px;
+    --shadow:0 20px 60px rgba(0,0,0,.45);
+    --font: "Inter", ui-sans-system, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  [data-theme="light"]{
+    --bg:#f4f6ff; --bg2:#ffffff;
+    --card:rgba(255,255,255,.9); --card-border:rgba(15,23,60,.1);
+    --text:#101736; --muted:#4d5a84; --muted2:#8a94b8;
+    --shadow:0 20px 50px rgba(80,90,180,.15);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:var(--font); color:var(--text);
+    background:
+      radial-gradient(900px 500px at 10% -5%, rgba(124,108,255,.35), transparent 60%),
+      radial-gradient(800px 500px at 95% 10%, rgba(0,229,204,.25), transparent 60%),
+      radial-gradient(700px 600px at 50% 110%, rgba(255,92,168,.18), transparent 60%),
+      linear-gradient(180deg, var(--bg), var(--bg2));
+    min-height:100vh;
+  }
+  a{color:inherit}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 20px}
+  /* header */
+  header.top{
+    position:sticky; top:12px; z-index:20;
+    margin:14px auto 0; max-width:1120px; padding:0 20px;
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card); border:1px solid var(--card-border);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border-radius:16px; padding:10px 12px 10px 16px;
+    box-shadow:var(--shadow);
+  }
+  .brand{display:flex; gap:12px; align-items:center; font-weight:800; letter-spacing:-.02em}
+  .logo{
+    width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    font-weight:900; color:#070b16; font-size:20px;
+    box-shadow:0 8px 24px rgba(124,108,255,.4);
+  }
+  .brand small{display:block; font-weight:500; color:var(--muted); font-size:12px; letter-spacing:.02em}
+  .nav-links{display:flex; gap:8px; align-items:center}
+  .nav-links a.btn-ghost{
+    text-decoration:none; font-size:14px; color:var(--muted);
+    padding:9px 12px; border-radius:10px;
+  }
+  .nav-links a.btn-ghost:hover{color:var(--text); background:rgba(255,255,255,.07)}
+  .icon-btn{
+    border:1px solid var(--card-border); background:rgba(255,255,255,.06);
+    color:var(--text); border-radius:10px; padding:9px 12px; cursor:pointer; font-size:14px;
+  }
+  .icon-btn:hover{transform:translateY(-1px)}
+  /* hero */
+  .hero{text-align:center; padding:56px 0 18px}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--card-border); background:var(--card);
+    border-radius:999px; padding:7px 14px; font-size:13px; color:var(--muted);
+    backdrop-filter:blur(12px);
+  }
+  .dot{width:8px; height:8px; border-radius:99px; background:var(--good); box-shadow:0 0 12px var(--good); animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  h1{
+    font-size:clamp(34px,6vw,62px); line-height:.95; letter-spacing:-.04em; margin:18px 0 12px;
+    text-wrap:balance;
+  }
+  h1 .grad{
+    background:linear-gradient(90deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--muted); font-size:clamp(15px,2.2vw,18px); max-width:680px; margin:0 auto; line-height:1.6}
+  .sub code{
+    font-family:var(--mono); font-size:.88em; background:rgba(124,108,255,.15);
+    border:1px solid rgba(124,108,255,.3); padding:2px 7px; border-radius:7px; color:var(--text);
+  }
+  /* main tool */
+  .tool{
+    margin:26px auto 0; background:var(--card); border:1px solid var(--card-border);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    overflow:hidden;
+  }
+  .tool-bar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-bottom:1px solid var(--card-border);
+    background:linear-gradient(180deg, rgba(255,255,255,.05), transparent);
+  }
+  .modes{display:flex; gap:8px; flex-wrap:wrap}
+  .mode{
+    border:1px solid var(--card-border); background:transparent; color:var(--muted);
+    padding:9px 14px; border-radius:999px; cursor:pointer; font-size:13.5px; font-weight:600;
+    transition:.18s;
+  }
+  .mode.active{
+    color:#070b16; border-color:transparent;
+    background:linear-gradient(135deg, var(--accent2), #7cffd4);
+    box-shadow:0 6px 20px rgba(0,229,204,.35);
+  }
+  [data-theme="light"] .mode.active{color:#07231d}
+  .toggles{display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:13.5px; color:var(--muted)}
+  .switch{display:flex; gap:8px; align-items:center; cursor:pointer; user-select:none}
+  .switch input{accent-color:var(--accent); width:16px; height:16px}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:0}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .pane{padding:16px; display:flex; flex-direction:column; gap:10px}
+  .pane + .pane{border-left:1px solid var(--card-border)}
+  @media(max-width:860px){.pane + .pane{border-left:0; border-top:1px solid var(--card-border)}}
+  .pane-head{display:flex; align-items:center; justify-content:space-between}
+  .pane-head h3{margin:0; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .count{font-family:var(--mono); font-size:12px; color:var(--muted2); background:rgba(255,255,255,.06); border:1px solid var(--card-border); padding:4px 9px; border-radius:999px}
+  textarea{
+    width:100%; min-height:260px; resize:vertical;
+    background:rgba(0,0,0,.28); border:1px solid var(--card-border);
+    border-radius:var(--radius-sm); color:var(--text);
+    padding:14px; font-family:var(--mono); font-size:14px; line-height:1.6; outline:none;
+  }
+  [data-theme="light"] textarea{background:#f7f9ff}
+  textarea:focus{border-color:var(--accent); box-shadow:0 0 0 4px rgba(124,108,255,.18)}
+  textarea.output{background:rgba(0,229,204,.06)}
+  [data-theme="light"] textarea.output{background:#effffb}
+  .actions{display:flex; gap:10px; flex-wrap:wrap; padding:0 16px 16px}
+  .btn{
+    border:0; cursor:pointer; font-weight:800; letter-spacing:-.01em;
+    padding:13px 18px; border-radius:13px; font-size:14.5px; transition:.18s;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--accent), var(--accent3));
+    color:white; box-shadow:0 10px 28px rgba(124,108,255,.4); flex:1; justify-content:center;
+    min-width:180px;
+  }
+  .btn-primary:hover{transform:translateY(-1px); filter:brightness(1.07)}
+  .btn-ghost2{
+    background:rgba(255,255,255,.06); color:var(--text); border:1px solid var(--card-border);
+  }
+  .btn-ghost2:hover{background:rgba(255,255,255,.11)}
+  .stats{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:10px; padding:0 16px 16px;
+  }
+  @media(max-width:860px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:rgba(255,255,255,.04); border:1px solid var(--card-border); border-radius:13px; padding:11px 12px}
+  .stat b{display:block; font-size:20px; letter-spacing:-.03em}
+  .stat span{font-size:12px; color:var(--muted)}
+  .stat.good b{color:var(--good)}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+    background:#0f172e; color:white; border:1px solid rgba(255,255,255,.15);
+    padding:11px 16px; border-radius:12px; font-size:14px; opacity:0; pointer-events:none;
+    transition:.25s; z-index:50; box-shadow:var(--shadow);
+  }
+  [data-theme="light"] .toast{background:#101736}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  /* sections */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:22px 0}
+  @media(max-width:860px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:18px; backdrop-filter:blur(14px)}
+  .card h3{margin:8px 0 6px; font-size:16px}
+  .card p{margin:0; color:var(--muted); font-size:14px; line-height:1.6}
+  .emoji{font-size:22px}
+  .demo{
+    background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:18px;
+    display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:stretch; margin-bottom:22px;
+  }
+  @media(max-width:760px){.demo{grid-template-columns:1fr}}
+  .demo pre{
+    margin:0; padding:14px; border-radius:12px; font-family:var(--mono); font-size:13px; line-height:1.6;
+    background:rgba(0,0,0,.3); border:1px solid var(--card-border); white-space:pre-wrap; word-break:break-word;
+  }
+  [data-theme="light"] .demo pre{background:#f2f4ff}
+  .demo .arrow{align-self:center; font-size:22px; opacity:.7; text-align:center}
+  footer{color:var(--muted2); font-size:13px; text-align:center; padding:26px 0 40px; line-height:1.7}
+  footer a{color:var(--muted)}
+  kbd{font-family:var(--mono); background:rgba(255,255,255,.08); border:1px solid var(--card-border); border-bottom-width:2px; padding:1px 7px; border-radius:7px; font-size:12px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="nav">
+    <div class="brand">
+      <div class="logo">≋</div>
+      <div>SpaceFix<small>extra-gap remover • text → clean text</small></div>
+    </div>
+    <div class="nav-links">
+      <a class="btn-ghost" href="#tool">Tool</a>
+      <a class="btn-ghost" href="#how">How it works</a>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">◐ Theme</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="pill"><span class="dot"></span> 100% free • runs in your browser • no upload</div>
+    <h1>Paste messy text.<br /><span class="grad">Get one clean space.</span></h1>
+    <p class="sub">
+      SpaceFix removes long gaps, double&nbsp;spaces, tabs and stray line-breaks —
+      keeping exactly <code>one space</code> between words. Perfect for essays, captions, chat logs &amp; AI prompts.
+    </p>
+  </section>
+
+  <main class="tool" id="tool" aria-label="Text cleaner tool">
+    <div class="tool-bar">
+      <div class="modes" role="tablist" aria-label="Cleaning mode">
+        <button class="mode active" data-mode="single" role="tab" aria-selected="true">✦ One-line — single space</button>
+        <button class="mode" data-mode="lines" role="tab" aria-selected="false">☰ Keep lines</button>
+        <button class="mode" data-mode="paragraph" role="tab" aria-selected="false">¶ Keep paragraphs</button>
+      </div>
+      <div class="toggles">
+        <label class="switch"><input type="checkbox" id="live" checked /> Live clean</label>
+        <label class="switch"><input type="checkbox" id="trimEmpty" checked /> Drop empty lines</label>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="pane">
+        <div class="pane-head"><h3>⎘ Input — paste anything</h3><span class="count" id="inCount">0 chars</span></div>
+        <textarea id="input" placeholder="Paste your text here…   like     this    with      huge      gaps.
+
+It   will   become   clean   instantly." autofocus></textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-ghost2" id="sampleBtn" type="button">✨ Try sample</button>
+          <button class="btn btn-ghost2" id="pasteBtn" type="button">📋 Paste</button>
+          <button class="btn btn-ghost2" id="clearBtn" type="button">🗑 Clear</button>
+        </div>
+      </div>
+      <div class="pane">
+        <div class="pane-head"><h3>✦ Output — one space only</h3><span class="count" id="outCount">0 chars</span></div>
+        <textarea id="output" class="output" readonly placeholder="Clean text appears here…"></textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-ghost2" id="copyBtn" type="button">⧉ Copy</button>
+          <button class="btn btn-ghost2" id="downloadBtn" type="button">⬇ .txt</button>
+          <button class="btn btn-ghost2" id="selectBtn" type="button">Select all</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="cleanBtn" type="button">⚡ Clean text <span style="opacity:.7; font-weight:500">(<kbd>Ctrl</kbd>+<kbd>↵</kbd>)</span></button>
+    </div>
+
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="sWords">0</b><span>words</span></div>
+      <div class="stat"><b id="sBefore">0</b><span>chars before</span></div>
+      <div class="stat"><b id="sAfter">0</b><span>chars after</span></div>
+      <div class="stat good"><b id="sSaved">0</b><span>junk chars removed</span></div>
+      <div class="stat"><b id="sGaps">0</b><span>gaps fixed</span></div>
+    </div>
+  </main>
+
+  <section class="cards" id="how">
+    <div class="card"><div class="emoji">🧲</div><h3>Collapses every gap</h3><p>Multiple spaces, tabs, non-breaking spaces and mixed whitespace → exactly one <b>&nbsp;</b>. No more ragged copy-paste from PDFs, Word or chats.</p></div>
+    <div class="card"><div class="emoji">⚡</div><h3>Live + offline</h3><p>Cleaning happens instantly in your browser with JavaScript. Nothing is uploaded — safe for private notes and assignments.</p></div>
+    <div class="card"><div class="emoji">📄</div><h3>3 smart modes</h3><p><b>One-line</b> for captions &amp; prompts. <b>Keep lines</b> for lists. <b>Keep paragraphs</b> for essays — blank-line clutter removed.</p></div>
+  </section>
+
+  <section class="demo">
+    <pre id="demoBefore">This    is   a     messy
+sentence	   with		 HUGE
+gaps…      copy-pasted   from
+a    PDF.</pre>
+    <div class="arrow">→</div>
+    <pre id="demoAfter" style="border-color:rgba(0,229,204,.4)">This is a messy sentence with HUGE gaps… copy-pasted from a PDF.</pre>
+  </section>
+
+  <footer>
+    Built as a single <b>index.html</b> for GitHub Pages • Deploy via <b>.github/workflows/pages.yml</b> (push / workflow_dispatch / repository_dispatch)<br />
+    Tip: press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to clean • <a href="#" id="topLink">back to top ↑</a>
+  </footer>
+</div>
+
+<div class="toast" id="toast">Copied ✓</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const input = $('input'), output = $('output');
+  const inCount = $('inCount'), outCount = $('outCount');
+  const sWords = $('sWords'), sBefore = $('sBefore'), sAfter = $('sAfter'), sSaved = $('sSaved'), sGaps = $('sGaps');
+  const live = $('live'), trimEmpty = $('trimEmpty'), toast = $('toast');
+  let mode = 'single';
+
+  // Core: normalize exotic spaces first, then collapse per mode.
+  function normalizeSpaces(s){
+    // NBSP, ogham, en/em quad, en/em/figure/thin/hair spaces, zero-width, ideographic, BOM
+    return s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000\uFEFF]/g, ' ');
+  }
+
+  function cleanSingle(s){
+    s = normalizeSpaces(s);
+    return s.replace(/\s+/g, ' ').trim();
+  }
+  function cleanLines(s){
+    s = normalizeSpaces(s).replace(/\r\n?/g, '\n');
+    const lines = s.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim());
+    const filtered = trimEmpty.checked ? lines.filter(l => l.length > 0) : lines;
+    return filtered.join('\n').trim();
+  }
+  function cleanParagraph(s){
+    s = normalizeSpaces(s).replace(/\r\n?/g, '\n');
+    s = s.replace(/[ \t]+/g, ' ');          // collapse horizontal gaps
+    s = s.replace(/[ \t]*\n[ \t]*/g, '\n'); // trim around breaks
+    s = s.replace(/\n{3,}/g, '\n\n');          // 3+ blank lines -> one blank line
+    if (trimEmpty.checked) s = s.replace(/\n{2,}/g, (m) => m.length >= 2 ? '\n\n' : m);
+    return s.trim();
+  }
+
+  function clean(s){
+    if (mode === 'lines') return cleanLines(s);
+    if (mode === 'paragraph') return cleanParagraph(s);
+    return cleanSingle(s);
+  }
+
+  function countGapsFixed(before){
+    const m = before.match(/ {2,}|\t|\u00A0{1,}|\n{2,}|\s {1,}/g);
+    return m ? m.length : 0;
+  }
+
+  function render(){
+    const before = input.value;
+    const after = before ? clean(before) : '';
+    output.value = after;
+    inCount.textContent = before.length + ' chars';
+    outCount.textContent = after.length + ' chars';
+    sBefore.textContent = before.length;
+    sAfter.textContent = after.length;
+    sSaved.textContent = Math.max(0, before.length - after.length);
+    sWords.textContent = after ? after.split(/\s+/).filter(Boolean).length : 0;
+    sGaps.textContent = countGapsFixed(before);
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast.t);
+    showToast.t = setTimeout(() => toast.classList.remove('show'), 1600);
+  }
+
+  document.querySelectorAll('.mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+      mode = btn.dataset.mode;
+      render();
+      showToast(mode === 'single' ? 'Mode: one-line, single space' : mode === 'lines' ? 'Mode: keep lines' : 'Mode: keep paragraphs');
+    });
+  });
+
+  $('cleanBtn').addEventListener('click', render);
+  input.addEventListener('input', () => { if (live.checked) render(); });
+  live.addEventListener('change', render);
+  trimEmpty.addEventListener('change', render);
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); render(); showToast('Cleaned ⚡'); }
+  });
+
+  $('clearBtn').addEventListener('click', () => { input.value=''; render(); input.focus(); });
+  $('sampleBtn').addEventListener('click', () => {
+    input.value = "Paste     your    text    here…   it   has      LONG       gaps,\n\n\ntabs\t\t\tand    weird     line   breaks.\n\nSpaceFix     keeps     exactly    ONE     space      between     words.  ";
+    render(); showToast('Sample loaded ✨');
+  });
+  $('pasteBtn').addEventListener('click', async () => {
+    try { input.value = await navigator.clipboard.readText(); render(); showToast('Pasted from clipboard 📋'); }
+    catch { input.focus(); document.execCommand('paste'); showToast('Press Ctrl+V to paste'); }
+  });
+  $('copyBtn').addEventListener('click', async () => {
+    if (!output.value) return showToast('Nothing to copy yet');
+    try { await navigator.clipboard.writeText(output.value); showToast('Copied ✓'); }
+    catch { output.select(); document.execCommand('copy'); showToast('Copied ✓'); }
+  });
+  $('selectBtn').addEventListener('click', () => { output.focus(); output.select(); });
+  $('downloadBtn').addEventListener('click', () => {
+    if (!output.value) return showToast('Nothing to download yet');
+    const blob = new Blob([output.value], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'spacefix-clean.txt'; a.click();
+    URL.revokeObjectURL(a.href); showToast('Downloaded ⬇');
+  });
+
+  // theme
+  const root = document.documentElement;
+  $('themeBtn').addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  });
+  $('topLink').addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
+
+  // expose for testing
+  window.SpaceFix = { cleanSingle, cleanLines, cleanParagraph, clean };
+  render();
+})();
+</script>
+</body>
+</html>

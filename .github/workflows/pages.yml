@@ -1,0 +1,94 @@
+name: Deploy SpaceFix site to GitHub Pages
+
+# Builds + deploys the single-file site (textpage/index.html) to GitHub Pages.
+#
+# Triggers:
+#   1. push to main when the site changes
+#   2. workflow_dispatch (manual "Run workflow" button in Actions tab)
+#   3. repository_dispatch (remote/API trigger — e.g. from another repo or script)
+#
+# Remote trigger examples:
+#   gh api repos/{owner}/{repo}/dispatches -f event_type=deploy-site
+#   curl -X POST -H "Authorization: Bearer <TOKEN>" \
+#        -H "Accept: application/vnd.github+json" \
+#        https://api.github.com/repos/{owner}/{repo}/dispatches \
+#        -d '{"event_type":"deploy-site"}'
+#
+# Setup (one time):
+#   Repo Settings -> Pages -> Source: "GitHub Actions"
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "textpage/index.html"
+      - "textpage/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [deploy-site, build-pages, deploy-pages]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify site file exists
+        run: |
+          if [ -f textpage/index.html ]; then
+            SITE_SRC=textpage/index.html
+          elif [ -f index.html ]; then
+            SITE_SRC=index.html
+          else
+            echo "::error::No index.html found (looked in textpage/index.html and ./index.html)" && exit 1
+          fi
+          echo "SITE_SRC=$SITE_SRC" >> $GITHUB_ENV
+          echo "Using $SITE_SRC, size: $(wc -c < "$SITE_SRC") bytes"
+
+      - name: Basic HTML sanity check
+        run: |
+          grep -q "</html>" "$SITE_SRC" || (echo "::error::$SITE_SRC looks invalid (no </html>)" && exit 1)
+          grep -q "SpaceFix" "$SITE_SRC" || (echo "::warning::SpaceFix branding not found")
+          echo "HTML check passed for $SITE_SRC"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare artifact (site root only)
+        run: |
+          mkdir -p _site
+          cp "$SITE_SRC" _site/index.html
+          # Optional 404 so unknown routes look nice
+          cp "$SITE_SRC" _site/404.html
+          touch _site/.nojekyll
+          ls -la _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
